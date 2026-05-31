@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web IDE - GitHub Integrated</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            overflow: hidden;
+        }
+        
+        .sidebar {
+            width: 250px;
+            background-color: #252526;
+            border-right: 1px solid #3c3c3c;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .sidebar-item {
+            padding: 8px 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background-color 0.2s;
+        }
+        
+        .sidebar-item:hover {
+            background-color: #2a2d2e;
+        }
+        
+        .sidebar-item.active {
+            background-color: #37373d;
+        }
+        
+        .file-tree {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px 0;
+        }
+        
+        .file-item {
+            padding: 4px 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+        }
+        
+        .file-item:hover {
+            background-color: #2a2d2e;
+        }
+        
+        .file-item.active {
+            background-color: #094771;
+        }
+        
+        .editor-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .tabs {
+            display: flex;
+            background-color: #252526;
+            border-bottom: 1px solid #3c3c3c;
+            overflow-x: auto;
+        }
+        
+        .tab {
+            padding: 8px 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            border-right: 1px solid #3c3c3c;
+            min-width: 120px;
+        }
+        
+        .tab:hover {
+            background-color: #2a2d2e;
+        }
+        
+        .tab.active {
+            background-color: #1e1e1e;
+            border-bottom: 1px solid #1e1e1e;
+            margin-bottom: -1px;
+        }
+        
+        .tab-close {
+            margin-left: auto;
+            cursor: pointer;
+            opacity: 0.7;
+        }
+        
+        .tab-close:hover {
+            opacity: 1;
+        }
+        
+        #editor {
+            flex: 1;
+            min-height: 0;
+        }
+        
+        .panel {
+            background-color: #1e1e1e;
+            border-top: 1px solid #3c3c3c;
+        }
+        
+        .panel-tabs {
+            display: flex;
+            background-color: #252526;
+            border-bottom: 1px solid #3c3c3c;
+        }
+        
+        .panel-tab {
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 13px;
+            border-right: 1px solid #3c3c3c;
+        }
+        
+        .panel-tab:hover {
+            background-color: #2a2d2e;
+        }
+        
+        .panel-tab.active {
+            background-color: #1e1e1e;
+            border-bottom: 1px solid #1e1e1e;
+            margin-bottom: -1px;
+        }
+        
+        .panel-content {
+            height: 200px;
+            overflow-y: auto;
+            padding: 8px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+        }
+        
+        .terminal {
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+        }
+        
+        .terminal-input {
+            background-color: transparent;
+            border: none;
+            color: #d4d4d4;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            width: 100%;
+            outline: none;
+        }
+        
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+        
+        .chat-message {
+            margin-bottom: 8px;
+            padding: 8px;
+            border-radius: 4px;
+        }
+        
+        .chat-message.user {
+            background-color: #2a2d2e;
+            margin-left: 20px;
+        }
+        
+        .chat-message.assistant {
+            background-color: #094771;
+            margin-right: 20px;
+        }
+        
+        .chat-input-container {
+            display: flex;
+            padding: 8px;
+            border-top: 1px solid #3c3c3c;
+        }
+        
+        .chat-input {
+            flex: 1;
+            background-color: #3c3c3c;
+            border: none;
+            color: #d4d4d4;
+            padding: 8px;
+            border-radius: 4px;
+            outline: none;
+        }
+        
+        .chat-send {
+            margin-left: 8px;
+            padding: 8px 16px;
+            background-color: #0e639c;
+            border: none;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .chat-send:hover {
+            background-color: #1177bb;
+        }
+        
+        .github-panel {
+            padding: 8px;
+        }
+        
+        .github-button {
+            width: 100%;
+            padding: 8px;
+            background-color: #0e639c;
+            border: none;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-bottom: 8px;
+        }
+        
+        .github-button:hover {
+            background-color: #1177bb;
+        }
+        
+        .github-input {
+            width: 100%;
+            padding: 8px;
+            background-color: #3c3c3c;
+            border: 1px solid #3c3c3c;
+            color: #d4d4d4;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            outline: none;
+        }
+        
+        .github-input:focus {
+            border-color: #0e639c;
+        }
+        
+        .status-bar {
+            background-color: #007acc;
+            color: white;
+            padding: 4px 8px;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .resize-handle {
+            height: 4px;
+            background-color: #3c3c3c;
+            cursor: ns-resize;
+        }
+        
+        .resize-handle:hover {
+            background-color: #0e639c;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #1e1e1e;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #424242;
+            border-radius: 5px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4f4f4f;
+        }
+    </style>
+</head>
+<body>
+    <div class="flex h-screen flex-col">
+        <!-- Top Bar -->
+        <div class="bg-[#3c3c3c] px-4 py-2 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <span class="text-white font-semibold">Web IDE</span>
+                <div class="flex gap-2">
+                    <button class="px-3 py-1 text-sm hover:bg-[#505050] rounded">File</button>
+                    <button class="px-3 py-1 text-sm hover:bg-[#505050] rounded">Edit</button>
+                    <button class="px-3 py-1 text-sm hover:bg-[#505050] rounded">View</button>
+                    <button class="px-3 py-1 text-sm hover:bg-[#505050] rounded">Help</button>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <input type="text" id="github-repo-input" placeholder="owner/repo" class="bg-[#3c3c3c] border border-[#505050] text-white px-3 py-1 rounded text-sm w-48 outline-none focus:border-[#0e639c]">
+                <button id="github-connect-btn" class="bg-[#0e639c] hover:bg-[#1177bb] text-white px-3 py-1 rounded text-sm">Connect GitHub</button>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="flex flex-1 overflow-hidden">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <div class="sidebar-item active" data-panel="explorer">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M1.75 1h12.5c.966 0 1.75.784 1.75 1.75v10.5A1.75 1.75 0 0114.25 15H1.75A1.75 1.75 0 010 13.25V2.75C0 1.784.784 1 1.75 1zM1.5 2.75v10.5c0 .138.112.25.25.25h12.5a.25.25 0 00.25-.25V2.75a.25.25 0 00-.25-.25H1.75a.25.25 0 00-.25.25z"/>
+                        <path d="M5 1.75a.25.25 0 01.25-.25h3.5a.25.25 0 01.25.25v12.5a.25.25 0 01-.25.25h-3.5a.25.25 0 01-.25-.25V1.75zM5.5 2v12h2.5V2H5.5z"/>
+                    </svg>
+                    Explorer
+                </div>
+                <div class="sidebar-item" data-panel="search">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M11.742 10.344a6.5 6.5 0 10-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 001.415-1.414l-3.85-3.85a1.007 1.007 0 00-.115-.1zM12 6.5a5.5 5.5 0 11-11 0 5.5 5.5 0 0111 0z"/>
+                    </svg>
+                    Search
+                </div>
+                <div class="sidebar-item" data-panel="git">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M15.67 7.066l-1.08-1.34a1.5 1.5 0 00-.309-.295l-.013-.01V3.5a.75.75 0 00-.75-.75h-2.5a.75.75 0 00-.75.75v.921a7.5 7.5 0 00-2.5-.921V3.5a.75.75 0 00-.75-.75h-2.5a.75.75 0 00-.75.75v.921a7.5 7.5 0 00-2.5.921V3.5a.75.75 0 00-.75-.75h-2.5a.75.75 0 00-.75.75v1.921l-.013.01a1.5 1.5 0 00-.309.295l-1.08 1.34a.75.75 0 00.58 1.234H2v5.5a.75.75 0 00.75.75h10.5a.75.75 0 00.75-.75V8.3h.67a.75.75 0 00.58-1.234z"/>
+                    </svg>
+                    Source Control
+                </div>
+                
+                <div class="file-tree" id="file-tree">
+                    <div class="file-item" data-file="index.html">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="#e44d26">
+                            <path d="M1 1h14l-1.5 13L8 15 2.5 14 1 1zm2.5 3l.5 4h6l.5-4H3.5z"/>
+                        </svg>
+                        index.html
+                    </div>
+                    <div class="file-item" data-file="style.css">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="#264de4">
+                            <path d="M1 1h14l-1.5 13L8 15 2.5 14 1 1zm2.5 3l.5 4h6l.5-4H3.5z"/>
+                        </svg>
+                        style.css
+                    </div>
+                    <div class="file-item" data-file="script.js">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="#f7df1e">
+                            <path d="M1 1h14l-1.5 13L8 15 2.5 14 1 1zm2.5 3l.5 4h6l.5-4H3.5z"/>
+                        </svg>
+                        script.js
+                    </div>
+                    <div class="file-item" data-file="README.md">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="#088fa1">
+                            <path d="M1 1h14l-1.5 13L8 15 2.5 14 1 1zm2.5 3l.5 4h6l.5-4H3.5z"/>
+                        </svg>
+                        README.md
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Editor Area -->
+            <div class="editor-container">
+                <div class="tabs" id="tabs">
+                    <div class="tab active" data-file="index.html">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="#e44d26">
+                            <path d="M1 1h14l-1.5 13L8 15 2.5 14 1 1zm2.5 3l.5 4h6l.5-4H3.5z"/>
+                        </svg>
+                        index.html
+                        <span class="tab-close">×</span>
+                    </div>
+                </div>
+                <div id="editor"></div>
+            </div>
+        </div>
+        
+        <!-- Bottom Panel -->
+        <div class="panel">
+            <div class="resize-handle" id="resize-handle"></div>
+            <div class="panel-tabs">
+                <div class="panel-tab active" data-panel="terminal">Terminal</div>
+                <div class="panel-tab" data-panel="chat">AI Chat</div>
+                <div class="panel-tab" data-panel="output">Output</div>
+                <div class="panel-tab" data-panel="problems">Problems</div>
+            </div>
+            <div class="panel-content terminal" id="terminal-panel">
+                <div id="terminal-output">
+                    <div>Welcome to Web IDE Terminal</div>
+                    <div>Type 'help' for available commands</div>
+                    <div>&nbsp;</div>
+                </div>
+                <div class="flex items-center">
+                    <span class="text-green-400 mr-2">$</span>
+                    <input type="text" class="terminal-input" id="terminal-input" placeholder="Enter command...">
+                </div>
+            </div>
+            <div class="panel-content hidden" id="chat-panel">
+                <div class="chat-container">
+                    <div class="chat-messages" id="chat-messages">
+                        <div class="chat-message assistant">
+                            Hello! I'm your AI assistant. How can I help you today?
+                        </div>
+                    </div>
+                    <div class="chat-input-container">
+                        <input type="text" class="chat-input" id="chat-input" placeholder="Ask me anything...">
+                        <button class="chat-send" id="chat-send">Send</button>
+                    </div>
+                </div>
+            </div>
+            <div class="panel-content hidden" id="output-panel">
+                <div>Output will appear here</div>
+            </div>
+            <div class="panel-content hidden" id="problems-panel">
+                <div>No problems detected</div>
+            </div>
+        </div>
+        
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div>Ready</div>
+            <div>Ln 1, Col 1</div>
+            <div>UTF-8</div>
+            <div>HTML</div>
+        </div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
